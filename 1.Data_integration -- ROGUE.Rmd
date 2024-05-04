@@ -1,0 +1,129 @@
+---
+title: "ROGUE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+# !/raid1/cqy/CD45-/Graduation_project
+library(tidyverse)
+library(ROGUE)
+library(Seurat)
+library(SeuratDisk)
+```
+
+```{r}
+Convert("2.BatchCorrection/stroma_counts.h5ad", dest = "h5seurat", overwrite = TRUE)
+stroma_counts <- LoadH5Seurat("2.BatchCorrection/stroma_counts.h5seurat", meta.data = FALSE, misc = FALSE)
+df <- read.csv("2.BatchCorrection/stroma_counts_metadata.csv")
+stroma_counts@meta.data <- df
+
+Convert("2.BatchCorrection/endo_counts.h5ad", dest = "h5seurat", overwrite = TRUE)
+endo_counts <- LoadH5Seurat("2.BatchCorrection/endo_counts.h5seurat", meta.data = FALSE, misc = FALSE)
+df <- read.csv("2.BatchCorrection/endo_counts_metadata.csv")
+endo_counts@meta.data <- df
+```
+
+```{r stroma rogue}
+stroma_expr <- as.matrix(stroma_counts[["RNA"]]$counts)
+stroma_rogue_bbknn <- rogue(stroma_expr, 
+                            labels = stroma_counts$bbknn, 
+                            samples = stroma_counts$major_cell_type,
+                            platform = "UMI",
+                            filter = TRUE, min.genes = 200, min.cells = 3)
+stroma_rogue_harmony <- rogue(stroma_expr, 
+                              labels = stroma_counts$harmony, 
+                              samples = stroma_counts$major_cell_type,
+                              platform = "UMI",
+                              filter = TRUE, min.genes = 200, min.cells = 3)
+stroma_rogue_scanorama <- rogue(stroma_expr, 
+                                labels = stroma_counts$scanorama, 
+                                samples = stroma_counts$major_cell_type,
+                                platform = "UMI",
+                                filter = TRUE, min.genes = 200, min.cells = 3)
+```
+
+```{r endo rogue}
+endo_expr <- as.matrix(endo_counts[["RNA"]]$counts)
+endo_rogue_bbknn <- rogue(endo_expr, 
+                          labels = endo_counts$bbknn, 
+                          samples = endo_counts$major_cell_type,
+                          platform = "UMI",
+                          filter = TRUE, min.genes = 200, min.cells = 3)
+endo_rogue_harmony <- rogue(endo_expr, 
+                            labels = endo_counts$harmony, 
+                            samples = endo_counts$major_cell_type,
+                            platform = "UMI",
+                            filter = TRUE, min.genes = 200, min.cells = 3)
+endo_rogue_scanorama <- rogue(endo_expr, 
+                              labels = endo_counts$scanorama, 
+                              samples = endo_counts$major_cell_type,
+                              platform = "UMI",
+                              filter = TRUE, min.genes = 200, min.cells = 3)
+```
+
+```{r stroma rogue plot}
+stroma_rogue <- rbind(stroma_rogue_bbknn,
+                      stroma_rogue_harmony, 
+                      select(stroma_rogue_scanorama, 1:8))
+rownames(stroma_rogue) <- c("BBKNN", "Harmony", "Scanorama")
+stroma_rogue$method <- factor(rownames(stroma_rogue), 
+                              levels = c("Harmony", "BBKNN", "Scanorama"))
+stroma_rogue <- stroma_rogue %>%
+  select(!doublets) %>%
+  pivot_longer(cols = !method, names_to = "celltype", values_to = "rogue")
+p <- ggplot(stroma_rogue, aes(x = celltype, y = rogue, fill = method)) +
+   geom_col(position = "dodge") + 
+   scale_fill_manual(values = c("#13213c", "#fca311", "#c8c8c8")) +
+   coord_cartesian(ylim = c(0.7, 1.0)) +
+   labs(x = "Stromal cell subtypes", y = "ROGUE value", fill = "Method") +
+   theme_bw() + 
+   theme(panel.grid.major=element_blank(),
+         panel.grid.minor=element_blank(),
+         panel.border = element_blank(),
+         axis.line.x = element_line(linewidth = 0.5),
+         axis.line.y = element_line(linewidth = 0.5))
+
+library(gg.gap)
+gg.gap(plot = p, 
+       segment = c(0.05, 0.7), ylim = c(0, 1),
+       rel_heights = c(0.2, 0, 0.8))
+```
+
+```{r endo rogue plot}
+endo_rogue <- rbind(endo_rogue_bbknn,
+                    select(endo_rogue_harmony, 1:7),
+                    select(endo_rogue_scanorama, 1:7))
+rownames(endo_rogue) <- c("BBKNN", "Harmony", "Scanorama")
+endo_rogue$method <- factor(rownames(endo_rogue), 
+                            levels = c("Harmony", "BBKNN", "Scanorama"))
+endo_rogue <- endo_rogue %>%
+  select(!doublets) %>%
+  pivot_longer(cols = !method, names_to = "celltype", values_to = "rogue")
+p <- ggplot(endo_rogue, aes(x = celltype, y = rogue, fill = method)) +
+  geom_col(position = "dodge") + 
+  scale_fill_manual(values = c("#13213c", "#fca311", "#c8c8c8")) +
+  coord_cartesian(ylim = c(0.7, 1.0)) +
+  labs(x = "Endothelial cell subtypes", y = "ROGUE value", fill = "Method") +
+  theme_bw() + 
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border = element_blank(),
+        axis.line.x = element_line(linewidth = 0.5),
+        axis.line.y = element_line(linewidth = 0.5))
+
+library(gg.gap)
+gg.gap(plot = p, 
+       segment = c(0.05, 0.7), ylim = c(0, 0.85),
+       tick_width = c(0.1, 0.05),
+       rel_heights = c(0.2, 0, 0.8))
+```
+
+```{r ROGUE legend}
+library(ggpubr)
+legend <- get_legend(p)
+as_ggplot(legend)
+```
