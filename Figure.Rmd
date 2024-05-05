@@ -1,0 +1,738 @@
+---
+title: "Figure"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup}
+library(tidyverse)
+library(ggpubr)
+```
+
+```{r color}
+disease_list = c("normal", "COPD", "IPF", "COVID-19", "cancer")
+disease_cols = c("normal" = "#780001",
+                 "COPD" = "#C11221",
+                 "IPF" = "#FEF0D5",
+                 "COVID-19" = "#002F49",
+                 "cancer" = "#669BBB")
+```
+
+## Figure 3 - Overview of datasets
+### Figure 3A - Disease
+```{r Figure 3A}
+metadata <- read_csv("Figure/Fig3/metadata.csv")
+dataset <- metadata %>%
+  select(dataset, disease) %>%
+  unique() %>%
+  group_by(disease) %>% 
+  summarise(count = n())
+
+patient <- metadata %>%
+  select(sampleID, disease) %>%
+  unique() %>%
+  group_by(disease) %>% 
+  summarise(count = n())
+```
+
+### Figure 3B - Metadata
+```{r Figure 3B sex barplot}
+metadata <- readr::read_csv("Figure/metadata.csv")
+sex <- metadata %>% 
+  filter(sex != "unknown") %>%
+  select(sampleID, disease, sex) %>% 
+  group_by(sex, disease) %>% 
+  summarise(count = n())
+sex$sex <- factor(sex$sex, levels = c("Male", "Female"))
+sex$disease <- factor(sex$disease, levels = disease_list)
+ggplot(sex, aes(x = sex, y = count, fill = disease)) +
+  geom_col(position = "stack", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Gender", y = "Number of samples", fill = "Disease") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 3B disease legend}
+sex_barplot <- ggplot(sex, aes(x = sex, y = count, fill = disease)) +
+  geom_col(position = "stack", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Gender", y = "Number of samples", fill = "Disease") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "right")
+legend <- get_legend(sex_barplot)
+as_ggplot(legend)
+```
+
+```{r Figure 3B sex NA}
+metadata <- readr::read_csv("Figure/metadata.csv")
+wd <- c("unknown" = "unknown", "Male" = "known", "Female" = "known")
+sex <- metadata %>% 
+  select(sampleID, disease, sex)
+sex$wd <- factor(wd[sex$sex], levels = c("unknown", "known"))
+sex <- sex %>%
+  group_by(wd) %>% 
+  summarise(count = n())
+
+ggplot(sex, aes(x = 1, y = count, fill = wd)) +
+  geom_col(position = "fill", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = c("#e8e8e8", "#555555")) +
+  labs(x = "", y = "Proportion of samples", fill = "Data availability") +
+  theme(axis.line = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 3B data availability legend}
+sex_barplot <- ggplot(sex, aes(x = 1, y = count, fill = wd)) +
+  geom_col(position = "fill", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = c("#e8e8e8", "#555555")) +
+  labs(x = "", y = "Proportion of samples", fill = "Data availability") +
+  theme(axis.line = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "right")
+legend <- get_legend(sex_barplot)
+as_ggplot(legend)
+```
+
+```{r Figure 3B smoking barplot}
+smoking <- metadata %>% 
+  filter(smoking_status != "unknown") %>%
+  select(sampleID, disease, smoking_status) %>% 
+  group_by(smoking_status, disease) %>% 
+  summarise(count = n())
+smoking$smoking_status <- factor(smoking$smoking_status, levels = c("Yes", "No", "unknown"))
+smoking$disease <- factor(smoking$disease, levels = disease_list)
+ggplot(smoking, aes(x = smoking_status, y = count, fill = disease)) +
+  geom_col(position = "stack", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Smoking status", y = "Number of samples", fill = "Disease") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 3B smoking NA}
+wd <- c("unknown" = "unknown", "Yes" = "known", "No" = "known")
+smoking <- metadata %>% 
+  select(sampleID, disease, smoking_status)
+smoking$wd <- factor(wd[smoking$smoking_status], levels = c("unknown", "known"))
+smoking <- smoking %>%
+  group_by(wd) %>% 
+  summarise(count = n())
+
+ggplot(smoking, aes(x = 1, y = count, fill = wd)) +
+  geom_col(position = "fill", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = c("#e8e8e8", "#555555")) +
+  labs(x = "", y = "Proportion of samples", fill = "Data availability") +
+  theme(axis.line = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 3B age barplot}
+lage <- c("30-35" = "30-40",
+          "40-45" = "40-50",
+          "45-50" = "40-50",
+          "50-55" = "50-60",
+          "55-60" = "50-60",
+          "60-65" = "60-70",
+          "65-70" = "60-70",
+          "70-75" = "70-80",
+          "75-80" = "70-80",
+          "80-85" = "80-90",
+          "85-90" = "80-90")
+age <- metadata %>% 
+  filter(age != "unknown") %>%
+  select(sampleID, disease, age)
+age$age <- lage[age$age]
+age <- age %>%
+  group_by(age, disease) %>% 
+  summarise(count = n())
+age$disease <- factor(age$disease, levels = disease_list)
+
+ggplot(age, aes(x = age, y = count, fill = disease)) +
+  geom_col(position = "stack", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Age", y = "Number of samples", fill = "Disease") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 3B age NA}
+wd <- c("unknown" = "unknown")
+age <- metadata %>% 
+  select(sampleID, disease, age)
+age$wd <- wd[age$age]
+age$wd <- ifelse(is.na(age$wd), "known", "unknown")
+age$wd <- factor(age$wd, levels = c("unknown", "known"))
+age <- age %>%
+  group_by(wd) %>% 
+  summarise(count = n())
+
+ggplot(age, aes(x = 1, y = count, fill = wd)) +
+  geom_col(position = "fill", width = 0.7) +
+  theme_classic() +
+  scale_fill_manual(values = c("#e8e8e8", "#555555")) +
+  labs(x = "", y = "Proportion of samples", fill = "Data availability") +
+  theme(axis.line = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+## Figure 5 - Stroma/Endo cell counts
+```{r Figure 5A stroma/endo barplot}
+freq = data.frame(disease = disease_list,
+                  Stromal = c(25217, 12654, 36665, 24081, 8021),
+                  Endothelial = c(48166, 17805, 13190, 11199, 6830))
+freq = pivot_longer(freq, cols = c(Stromal, Endothelial), 
+                    names_to = "celltype", values_to = "freq")
+freq$celltype = factor(freq$celltype, levels = c("Stromal", "Endothelial"))
+freq$disease = factor(freq$disease, levels = disease_list)
+ggplot(freq, aes(x = celltype, y = freq, fill = disease)) +
+  geom_col(position = "fill", width = 0.7) +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "", y = "Frequency", fill = "Disease") +
+  theme_classic()
+```
+
+```{r Figure 5B stroma frequency boxplot}
+library(readr)
+freq <- readr::read_csv("Figure/Fig5/cellcounts.csv")
+freq <- freq %>% filter(Stroma >= 100)
+freq_disease <- freq[, 6]
+freq <- freq[, 2:5]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+freq$disease <- factor(freq$disease, levels = disease_list)
+freq <- select(freq, Stroma, disease)
+ggplot(freq, aes(x = disease, y = Stroma, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1.5) +
+  stat_compare_means(method = "wilcox.test", ref.group = "normal",
+                     label = "p.format", label.y = 0.8,
+                     size = 3) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Disease", y = "Frequency of stromal cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 5B endo frequency boxplot}
+freq <- readr::read_csv("Figure/Fig5/cellcounts.csv")
+freq <- freq %>% filter(Endothelial >= 80)
+freq_disease <- freq[, 6]
+freq <- freq[, 2:5]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+freq$disease <- factor(freq$disease, levels = disease_list)
+freq <- select(freq, Endothelial, disease)
+ggplot(freq, aes(x = disease, y = Endothelial, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, size = 1.5) +
+  stat_compare_means(method = "wilcox.test", ref.group = "normal",
+                     label = "p.format", label.y = 0.32,
+                     size = 3) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Disease", y = "Frequency of endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+## Figure 10 - Stroma DEG & GSEA
+```{r Figure 10B alveolar gsea}
+alv_gsea <- readr::read_csv("3.Stroma/alv_gsea.csv")
+hallmark <- gsub("HALLMARK", "", gsub("_", " ", alv_gsea$source))
+hallmark <- stringr::str_to_title(hallmark)
+alv_gsea$source <- hallmark
+
+ggplot(alv_gsea[c(1:5), ], aes(y = reorder(source, norm), x = norm)) +
+  geom_col(width = 0.8, fill = "#C62828") +
+  theme_classic() +
+  labs(x = "Normalized Enrichment Score", y = "Hallmark Entries") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 10D myofibro gsea}
+myo_gsea <- readr::read_csv("3.Stroma/myo_gsea.csv")
+hallmark <- gsub("HALLMARK", "", gsub("_", " ", myo_gsea$source))
+hallmark <- stringr::str_to_title(hallmark)
+myo_gsea$source <- hallmark
+myo_gsea$positive <- myo_gsea$norm > 0
+
+ggplot(myo_gsea[c(1:5, 46:49),], 
+       aes(y = reorder(source, norm), x = norm, fill = positive)) +
+  geom_col(width = 0.8) +
+  theme_classic() +
+  labs(x = "Normalized Enrichment Score", y = "Hallmark Entries") +
+  scale_fill_manual(values = c("#3F51B5", "#29B6F6")) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+## Figure 11 - Stroma & Disease
+### Figure 11A - Stroma Ro/e
+```{r Figure 11A stroma Ro/e}
+library(ComplexHeatmap)
+library(RColorBrewer)
+stroma_roe <- readr::read_csv("3.Stroma/stroma_ROE.csv")
+stroma_roe <- stroma_roe %>% 
+  column_to_rownames("minor_cell_type") %>%
+  select(disease_list)
+stroma_roe <- as.matrix(log(stroma_roe))
+pheatmap(stroma_roe, 
+         cellwidth = 20, cellheight = 20,
+         color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdBu")))(100),
+         cluster_cols = FALSE, cluster_rows= TRUE, clustering_distance_rows = "pearson",
+         treeheight_col = 0, treeheight_row = 15,
+         cutree_row = 3,
+         border_color = "black")
+```
+### Figure 11B - Frequency of stroma minor cell types
+```{r Figure 11B stroma minor cell type}
+library(readr)
+freq <- readr::read_csv("3.Stroma/stroma_minor_cell_type.csv")
+freq$all <- rowSums(freq[, -c(1,16)])
+freq <- freq %>% filter(all >= 100) %>% select(-all)
+freq_disease <- freq[, 16]
+freq <- freq[, 2:15]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+freq$disease <- factor(freq$disease, levels = disease_list)
+ggplot(freq, aes(x = disease, y = `Myofibro. CCL19+`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(5,1), c(5,2), c(5,3)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "Myofibro. CCL19+", x = "Disease", y = "Proportions of all stromal cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `Myofibro. CCL19-`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(4,1), c(4,2), c(5,1), c(5,2), c(5,3)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "Myofibro. CCL19-", x = "Disease", y = "Proportions of all stromal cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `SMCs`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(2,4), c(2,5), c(3,4), c(3,5)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "SMCs", x = "Disease", y = "Proportions of all stromal cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `Adv.fibro.`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(1,4), c(1,5)),
+                     label = "p.format", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "Adv.fibro.", x = "Disease", y = "Proportions of all stromal cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+## Figure 13 - Endo clustering
+```{r Figure 13E endo aucell}
+pathway_score <- read.csv("4.Endo/aucell_pathway.csv")
+pathway_score <- pathway_score %>%
+  select(-X) %>%
+  group_by(minor_cell_type) %>%
+  summarise_each(funs(mean))
+pathway_score <- pathway_score %>% 
+  column_to_rownames("minor_cell_type") %>% 
+  t() %>% 
+  as.data.frame()
+pathway_score <- pathway_score[c(3,2,5,1,4),]
+rownames(pathway_score) <- c("Leukocyte adhesion to vascular endo.",
+                             "Antigen processing and presentation",
+                             "Interferon signaling",
+                             "VEGF pathway",
+                             "Collagen formation")
+
+library("pheatmap")
+pheatmap(pathway_score, 
+         cellwidth = 20, cellheight = 20,
+         color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdBu")))(100),
+         scale = "row",
+         cluster_cols = FALSE, cluster_rows= FALSE,
+         treeheight_col = 0, treeheight_row = 0,
+         border_color = "black")
+```
+
+## Figure 14 - Endo & Disease
+### Figure 14A - Endo Ro/e
+```{r Figure 14A endo Ro/e}
+library(ComplexHeatmap)
+library(RColorBrewer)
+endo_roe <- readr::read_csv("4.Endo/endo_ROE.csv")
+endo_roe <- endo_roe %>% 
+  column_to_rownames("minor_cell_type") %>%
+  select(disease_list)
+endo_roe <- as.matrix(log(endo_roe))
+pheatmap(endo_roe, 
+         cellwidth = 20, cellheight = 20,
+         color = colorRampPalette(rev(brewer.pal(n = 11, name = "RdBu")))(100),
+         breaks = seq(-1, 1, length.out = 100),
+         cluster_cols = FALSE, cluster_rows= TRUE, clustering_distance_rows = "pearson",
+         treeheight_col = 0, treeheight_row = 15,
+         cutree_rows = 3,
+         border_color = "black")
+```
+
+### Figure 14B - Frequency of endo minor cell types
+```{r Figure 14B endo all minor cell type}
+library(readr)
+freq <- readr::read_csv("4.Endo/endo_minor_cell_type.csv")
+freq$all <- rowSums(freq[, -c(1,11)])
+freq <- freq %>% filter(all >= 80) %>% select(-all)
+freq_disease <- freq[, 11]
+freq <- freq[, 2:10]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+freq$disease <- factor(freq$disease, levels = disease_list)
+
+freq <- freq %>% 
+  pivot_longer(cols = !disease, names_to = "minor_cell_type", values_to = "freq")
+ggplot(freq, aes(x = disease, y = freq, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(aes(label = sprintf("p = %4.3f", as.numeric(..p.format..))),
+                     method = "wilcox.test", ref.group = ".all.", size = 3) +
+  theme_classic() +
+  facet_wrap("minor_cell_type", scale = "free_y", ncol = 2) +
+  scale_fill_manual(values = disease_cols) +
+  labs(x = "Disease", y = "Proportions of all endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+```{r Figure 14B endo selected minor cell type}
+freq <- readr::read_csv("4.Endo/endo_minor_cell_type.csv")
+freq$all <- rowSums(freq[, -c(1,11)])
+freq <- freq %>% filter(all >= 80) %>% select(-all)
+freq_disease <- freq[, 11]
+freq <- freq[, 2:10]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+freq$disease <- factor(freq$disease, levels = disease_list)
+ggplot(freq, aes(x = disease, y = `endo. PLVAP`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(3,1), c(3,2), c(3,4), c(5,1), c(5,2), c(5,4)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "endo. PLVAP", x = "Disease", y = "Proportions of all endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `aCap` + `gCap`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(3,1), c(3,2), c(3,4), c(3,5)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "aCap + gCap", x = "Disease", y = "Proportions of all endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `endo. CXCL10`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(3,1), c(3,2), c(3,4), c(3,5)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "endo. CXCL10", x = "Disease", y = "Proportions of all endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+
+ggplot(freq, aes(x = disease, y = `sys.Vein`, fill = disease)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 1) +
+  stat_compare_means(method = "wilcox.test",
+                     comparisons = list(c(3,1), c(3,2), c(3,4), c(3,5)),
+                     label = "p.signif", size = 3, tip.length = 0) +
+  theme_classic() +
+  scale_fill_manual(values = disease_cols) +
+  labs(title = "sys.Vein", x = "Disease", y = "Proportions of all endothelial cells") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = "none")
+```
+
+## Figure 16 - Stroma label transfer
+### Figure 16C - Performance evaluation  
+```{r Figure 16C stroma uncertainty}
+uncert <- read_csv("5.LabelTransfer/stroma_uncertainty.csv")
+uncert$minor_cell_type <- factor(uncert$minor_cell_type)
+uncert$minor_cell_type <- factor(uncert$minor_cell_type,
+                                 levels=rev(levels(uncert$minor_cell_type)))
+celltype_cols = rev(c("#673AB7", "#C62828", "#F44336", "#006064",
+                      "#607D8B", "#29B6F6", "#3F51B5", "#009688", 
+                      "#4CAF50", "#8BC34A", "#9E9E9E", "#FFEB3B", 
+                      "#FF9800", "#795548"))
+ggplot(uncert, aes(x = uncertainty, y = minor_cell_type, 
+                   fill = minor_cell_type, group = minor_cell_type)) +
+  geom_violin() + 
+  labs(x = "Uncertainty") +
+  scale_fill_manual(values = celltype_cols) +
+  theme_classic() +
+  theme(legend.position = "none") + 
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank())
+```
+
+```{r Figure 16C entropy & heatmap}
+ltcelltype <- read_csv("5.LabelTransfer/stroma_celltype.csv")
+ltcelltype <- ltcelltype %>%
+  group_by(leiden, minor_cell_type) %>%
+  summarise(counts = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = minor_cell_type, values_from = counts) %>%
+  column_to_rownames("leiden")
+ltcelltype <- ltcelltype / rowSums(ltcelltype, na.rm = TRUE)
+entropy <- apply(ltcelltype, 1, function(z)
+  -sum(z * log10(z), na.rm = TRUE) / log10(sum(!is.na(z))))
+entropy <- as.data.frame(entropy) %>% rownames_to_column("leiden")
+entropy$leiden <- as.numeric(entropy$leiden)
+
+ggplot(entropy, aes(x = leiden, y = entropy)) +
+  geom_col(width = 0.8, fill = "#A50F15") + 
+  labs(y = "Entropy") +
+  theme_classic() +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.line.x = element_blank())
+
+ltcelltype[is.na(ltcelltype)] <- 0
+pheatmap(as.matrix(t(ltcelltype > 1/7)),
+         cellheight = 20, cellwidth = 20,
+         color = brewer.pal(n = 11, name = "Greys"),
+         cluster_cols = FALSE, cluster_rows= FALSE, 
+         border_color = "black")
+```
+
+## Figure 17 - Endo label transfer
+### Figure 17C - Performance evaluation 
+```{r Figure 17C endo uncertainty}
+uncert <- read_csv("5.LabelTransfer/endo_uncertainty.csv")
+uncert$minor_cell_type <- factor(uncert$minor_cell_type)
+uncert$minor_cell_type <- factor(uncert$minor_cell_type,
+                                 levels=rev(levels(uncert$minor_cell_type)))
+celltype_cols = rev(c("#673AB7", "#C62828", "#006064", 
+                 "#29B6F6", "#795548", "#FF9800", 
+                 "#607D8B", "#4CAF50", "#009688"))
+ggplot(uncert, aes(x = uncertainty, y = minor_cell_type, 
+                   fill = minor_cell_type, group = minor_cell_type)) +
+  geom_violin() + 
+  labs(x = "Uncertainty") +
+  scale_fill_manual(values = celltype_cols) +
+  theme_classic() +
+  theme(legend.position = "none") + 
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.line.y = element_blank())
+```
+
+```{r Figure 17C endo entropy & heatmap}
+ltcelltype <- read_csv("5.LabelTransfer/endo_celltype.csv")
+ltcelltype <- ltcelltype %>%
+  group_by(leiden, minor_cell_type) %>%
+  summarise(counts = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = minor_cell_type, values_from = counts) %>%
+  column_to_rownames("leiden")
+ltcelltype <- ltcelltype / rowSums(ltcelltype, na.rm = TRUE)
+entropy <- apply(ltcelltype, 1, function(z)
+  -sum(z * log10(z), na.rm = TRUE) / log10(sum(!is.na(z))))
+entropy <- as.data.frame(entropy) %>% rownames_to_column("leiden")
+entropy$leiden <- as.numeric(entropy$leiden)
+
+ggplot(entropy, aes(x = leiden, y = entropy)) +
+  geom_col(width = 0.8, fill = "#A50F15") + 
+  labs(y = "Entropy") +
+  theme_classic() +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.line.x = element_blank())
+
+ltcelltype[is.na(ltcelltype)] <- 0
+pheatmap(as.matrix(t(ltcelltype > 2/9)),
+         cellheight = 20, cellwidth = 20,
+         color = brewer.pal(n = 11, name = "Greys"),
+         cluster_cols = FALSE, cluster_rows= FALSE, 
+         border_color = "black")
+```
+
+### Figure 18 - Frequency of transferred label
+```{r Figure 18A stroma response frequency}
+library(ggpubr)
+ltcelltype <- read_csv("5.LabelTransfer/stroma_celltype.csv")
+major_response <- unique(ltcelltype[, c("sampleID", "Major Response")])
+major_response <- major_response %>% column_to_rownames("sampleID")
+ltcelltype <- ltcelltype %>% 
+  group_by(sampleID, minor_cell_type) %>%
+  summarise(counts = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = minor_cell_type, values_from = counts) %>%
+  column_to_rownames("sampleID")
+ltcelltype <- ltcelltype / rowSums(ltcelltype, na.rm = TRUE)
+ltcelltype[is.na(ltcelltype)] <- 0
+ltcelltype <- ltcelltype%>%
+  rownames_to_column("sampleID") %>%
+  pivot_longer(!sampleID, names_to = "minor_cell_type", values_to = "frequency")
+ltcelltype$major_response <- major_response[ltcelltype$sampleID, ]
+
+freq <- readr::read_csv("3.Stroma/stroma_minor_cell_type.csv")
+freq$all <- rowSums(freq[, -c(1,16)])
+freq <- freq %>% filter(all >= 100) %>% select(-all)
+freq_disease <- freq[, 16]
+freq <- freq[, 2:15]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+
+freq <- freq %>% 
+  filter(disease == "cancer") %>%
+  rownames_to_column("sampleID") %>%
+  pivot_longer(!c(sampleID, disease), names_to = "minor_cell_type", values_to = "frequency")
+colnames(freq) <- c("sampleID", "major_response", "minor_cell_type", "frequency")
+ltcelltype <- rbind(ltcelltype, freq)
+ltcelltype$major_response <- factor(ltcelltype$major_response,
+                                    levels = c("MPR", "non-MPR", "cancer"))
+ltcelltype <- ltcelltype %>% filter(minor_cell_type %in%
+                                      c("Alv.fibro. CCL2+",
+                                        "Alv.fibro. CCL2-",
+                                        "fibro. APOD",
+                                        "Myofibro. CCL19+",
+                                        "Myofibro. CCL19-"))
+
+ggplot(ltcelltype, aes(x = major_response, y = frequency, fill = major_response)) +
+  geom_boxplot(outlier.size = 0.5) +
+  stat_compare_means(method = "wilcox.test",
+                     comparison = list(c(1,2), c(1,3), c(2,3)),
+                     label = "p.format", hide.ns = TRUE,
+                     tip.length = 0,
+                     size = 3) +
+  labs(x = "Stromal cell subtypes", y = "Proportion of stromal cells") +
+  facet_wrap("minor_cell_type", scales = "free", nrow = 1) +
+  scale_fill_manual(values = c("#DFEBD5", "#CFDAEC", "#BFBBBA")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme(legend.position = "none")
+```
+
+```{r Figure 18B endo response frequency}
+library(ggpubr)
+ltcelltype <- read_csv("5.LabelTransfer/endo_celltype.csv")
+major_response <- unique(ltcelltype[, c("sampleID", "major_response")])
+major_response <- major_response %>% column_to_rownames("sampleID")
+ltcelltype <- ltcelltype %>% 
+  group_by(sampleID, minor_cell_type) %>%
+  summarise(counts = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = minor_cell_type, values_from = counts) %>%
+  column_to_rownames("sampleID")
+ltcelltype <- ltcelltype / rowSums(ltcelltype, na.rm = TRUE)
+ltcelltype[is.na(ltcelltype)] <- 0
+ltcelltype <- ltcelltype%>%
+  rownames_to_column("sampleID") %>%
+  pivot_longer(!sampleID, names_to = "minor_cell_type", values_to = "frequency")
+ltcelltype$major_response <- major_response[ltcelltype$sampleID, ]
+
+freq <- readr::read_csv("4.Endo/endo_minor_cell_type.csv")
+freq$all <- rowSums(freq[, -c(1,11)])
+freq <- freq %>% filter(all >= 80) %>% select(-all)
+freq_disease <- freq[, 11]
+freq <- freq[, 2:10]
+freq <- cbind(freq/rowSums(freq), freq_disease)
+
+freq <- freq %>% 
+  filter(disease == "cancer") %>%
+  rownames_to_column("sampleID") %>%
+  pivot_longer(!c(sampleID, disease), names_to = "minor_cell_type", values_to = "frequency")
+colnames(freq) <- c("sampleID", "major_response", "minor_cell_type", "frequency")
+ltcelltype <- rbind(ltcelltype, freq)
+ltcelltype$major_response <- factor(ltcelltype$major_response,
+                                    levels = c("MPR", "non-MPR", "cancer"))
+ltcelltype <- ltcelltype %>% filter(minor_cell_type %in%
+                                      c("aCap",
+                                        "Artery",
+                                        "gCap",
+                                        "pul.Vein",
+                                        "sys.Vein"))
+
+ggplot(ltcelltype, aes(x = major_response, y = frequency, fill = major_response)) +
+  geom_boxplot(outlier.size = 0.5) +
+  stat_compare_means(method = "wilcox.test",
+                     comparison = list(c(1,2), c(1,3), c(2,3)),
+                     label = "p.format", hide.ns = TRUE,
+                     tip.length = 0,
+                     size = 3) +
+  labs(x = "Endothelial cell subtypes", y = "Proportion of endothelial cells") +
+  facet_wrap("minor_cell_type", scales = "free", nrow = 1) +
+  scale_fill_manual(values = c("#DFEBD5", "#CFDAEC", "#BFBBBA")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme(legend.position = "none")
+```
